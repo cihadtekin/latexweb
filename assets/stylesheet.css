@@ -1,0 +1,21 @@
+#editor  {
+	position: fixed;
+	left: 0;
+	width: 50%;
+	height: 100%;
+}
+#preview {
+	position: fixed;
+	left: 50%;
+	width: 50%;
+	height: 100%;
+}
+
+
+
+#ace-editor {
+	height: 100%;
+}
+
+
+

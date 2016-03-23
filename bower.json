@@ -1,0 +1,24 @@
+{
+  "name": "latexweb",
+  "authors": [
+    "Cihad Tekin <cihadtekin@gmail.com>"
+  ],
+  "description": "Online latex editor/viewer",
+  "main": "index.html",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "latex",
+    "tex",
+    "editor"
+  ],
+  "license": "MIT",
+  "homepage": "",
+  "private": true,
+  "dependencies": {
+    "ace-builds": "^1.2.3",
+    "bootstrap": "^3.3.6",
+    "jquery": "^2.2.2"
+  }
+}

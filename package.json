@@ -1,0 +1,17 @@
+{
+  "name": "latexweb",
+  "version": "0.0.0",
+  "description": "",
+  "main": "preview.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Cihad Tekin <cihadtekin@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "ace-editor-builds": "^1.2.0",
+    "bootstrap": "^3.3.6",
+    "express": "^4.13.4",
+    "jquery": "^2.2.2"
+  }
+}
