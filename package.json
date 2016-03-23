@@ -12,6 +12,7 @@
     "ace-editor-builds": "^1.2.0",
     "bootstrap": "^3.3.6",
     "express": "^4.13.4",
-    "jquery": "^2.2.2"
+    "jquery": "^2.2.2",
+    "lodash": "^4.6.1"
   }
 }
