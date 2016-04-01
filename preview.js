@@ -150,7 +150,7 @@ Preview.prototype.complete = function(cbOrRes) {
  */
 function PreviewError(message) {
   if ( ! (this instanceof PreviewError) ) {
-    return new PreviewError;
+    return new PreviewError(message);
   }
   /**
    * Message
@@ -204,8 +204,8 @@ app.post('/', function(req, res) {
     "{\\small \\noindent Updated 5 December 2006.}" + "\n" +
     "\\end{document}"
   ).complete(function(result) {
-    console.log('asdf');
-    // res.json(result);
+    console.log(result);
+    res.json(result);
   });
 
 });
