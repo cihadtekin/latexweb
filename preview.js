@@ -28,7 +28,7 @@ function Preview(source, opts) {
    */
   self.opts = _.defaults(opts, {
     standby: 1000,
-    interval: 50,
+    interval: 1000,
     lastOutput: Date.now(),
     fileName: Date.now(),  // Temporary file's name
     fileExt: '.tex',
@@ -59,19 +59,21 @@ function Preview(source, opts) {
    * @type {Boolean}
    */
   self.completed = false;
-  /**
-   * Stuck control
-   * @type {Number}
-   */
-  self.intervalID = setInterval(function() {
-    if (self.completed) {
-      clearInterval(self.intervalID);
+
+  // Stuck control
+  var timerFunc = function() {
+    if ( ! self.completed ) {
+      if (Date.now() - self.opts.lastOutput > self.opts.standby) {
+        self.latexProcess && self.latexProcess.kill();
+        console.log('Timer error');
+        return self.complete(PreviewError('Process couldn\'t complete'));
+      }
+
+      setTimeout(timerFunc, self.opts.interval);
     }
-    if (Date.now() - self.opts.lastOutput > self.opts.standby) {
-      self.latexProcess && self.latexProcess.kill();
-      return self.complete(PreviewError('Process couldn\'t complete'));
-    }
-  }, self.opts.interval);
+  };
+
+  timerFunc();
 
   // Write input to a temporary file
   fs.writeFile(tmpDir + self.opts.fileName + self.opts.fileExt, source, function(error) {
@@ -91,6 +93,13 @@ function Preview(source, opts) {
         if (error !== null) {
           return self.complete(PreviewError("Latex has encountered an error"));
         }
+        // If there was an error,
+        // response should have been sent already
+        if (self.complete) {
+          return;
+        }
+
+        self.opts.lastOutput = Date.now();
 
         // Convert pdf file to png
         self.convertProcess = child_process.exec(
@@ -101,13 +110,12 @@ function Preview(source, opts) {
             if (error !== null) {
               return self.complete(PreviewError("Error while converting pdf to png"));
             }
-
+            self.opts.lastOutput = Date.now();
             // Create base64 data of the created image
             fs.readFile(tmpDir + self.opts.fileName + '.png', function(error, data) {
               if (error !== null) {
                 return self.complete(PreviewError("Error while reading created image file"));
               }
-
               return self.complete({
                 success: true,
                 message: "Data URI created successfully",
@@ -120,6 +128,7 @@ function Preview(source, opts) {
     );
     // Listen outputs
     self.latexProcess.stdout.on('data', function(data) {
+      console.log(data);
       lastOutput = Date.now();
     });
   });
@@ -136,7 +145,6 @@ Preview.prototype.complete = function(cbOrRes) {
     this.completeCallbacks.push(cbOrRes);
   } else {
     self.completed = true;
-    self.intervalID && clearInterval(self.intervalID);
     for (var i = 0; i < this.completeCallbacks.length; i++) {
       this.completeCallbacks[i].call(self, cbOrRes);
     }
@@ -150,7 +158,7 @@ Preview.prototype.complete = function(cbOrRes) {
  */
 function PreviewError(message) {
   if ( ! (this instanceof PreviewError) ) {
-    return new PreviewError;
+    return new PreviewError(message);
   }
   /**
    * Message
@@ -168,48 +176,18 @@ app.post('/', function(req, res) {
   res.header("Access-Control-Allow-Origin", "http://localhost");
   res.header("Access-Control-Allow-Methods", "POST");
 
-  Preview(
-    "\\documentclass[preview,border=12pt,12pt]{standalone}" + "\n" +
-    "\\usepackage{amsmath}" + "\n" +
-    "\\usepackage{graphicx}" + "\n" +
-    "\\usepackage{verbatim}" + "\n" +
-    "\\usepackage{color}" + "\n" +
-    "\\usepackage{subfigure}" + "\n" +
-    "\\usepackage{hyperref}" + "\n" +
-    "\\setlength{\\baselineskip}{16.0pt}" + "\n" +
-    "\\setlength{\\parskip}{3pt plus 2pt}" + "\n" +
-    "\\setlength{\\parindent}{20pt}" + "\n" +
-    "\\setlength{\\oddsidemargin}{0.5cm}" + "\n" +
-    "\\setlength{\\evensidemargin}{0.5cm}" + "\n" +
-    "\\setlength{\\marginparsep}{0.75cm}" + "\n" +
-    "\\setlength{\\marginparwidth}{2.5cm}" + "\n" +
-    "\\setlength{\\marginparpush}{1.0cm}" + "\n" +
-    "\\setlength{\\textwidth}{150mm}" + "\n" +
-    "\\begin{comment}" + "\n" +
-    "\\pagestyle{empty}" + "\n" +
-    "\\end{comment}" + "\n" +
-    "\\begin{document}" + "\n" +
-    "\\begin{center}" + "\n" +
-    "{\\large Introduction to \\LaTeX}" + "\n" +
-    "\\copyright 2006 by Harvey Gould" + "\n" +
-    "December 5, 2006" + "\n" +
-    "\\end{center}" + "\n" +
-    "\\section{Introduction}" + "\n" +
-    "\\TeX\\ looks more difficult than it is. It is" + "\n" +
-    "almost as easy as $\\pi$. See how easy it is to make special" + "\n" +
-    "symbols such as $\\alpha$," + "\n" +
-    "$\\beta$, $\\gamma$," + "\n" +
-    "$\\delta$, $\\sin x$, $\\hbar$, $\\lambda$, $\\ldots$ We also can make" + "\n" +
-    "subscripts" + "\n" +
-    "{\\small \\noindent Updated 5 December 2006.}" + "\n" +
-    "\\end{document}"
-  ).complete(function(result) {
-    console.log('asdf');
-    // res.json(result);
+  console.log(req);
+  /*
+  Preview().complete(function(result) {
+    res.json(result);
   });
-
+  */
 });
 
-app.listen(3000, function() {
-  console.log('Listening on 3000');
+app.listen(3002, function() {
+  console.log('Listening on 3002');
+});
+
+process.on('uncaughtException', function(err) {
+  console.log('uncaughtException', err.stack);
 });
