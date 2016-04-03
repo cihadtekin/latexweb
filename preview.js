@@ -175,8 +175,6 @@ function PreviewError(message) {
 app.post('/', function(req, res) {
   res.header("Access-Control-Allow-Origin", "http://localhost");
   res.header("Access-Control-Allow-Methods", "POST");
-
-  console.log(req);
   /*
   Preview().complete(function(result) {
     res.json(result);
