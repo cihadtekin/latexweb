@@ -4,7 +4,7 @@
     timeoutId: null,
     pollInterval: 1000, // 1 sec
     ready: false,
-    serverUrl: "http://localhost:3000",
+    serverUrl: "http://localhost:3002",
 
     // Ace editor instance
     editor: null,
@@ -27,7 +27,6 @@
       self.editor.setTheme("ace/theme/twilight");
       self.editor.session.setMode("ace/mode/tex");
       self.editor.on("input", function(a, b) {
-        console.log(a, b);
         var source = b.session.getValue();
         self.preview(source);
       });
@@ -51,11 +50,13 @@
         }, self.pollInterval);
       }
 
-      /*
-      $.post(self.serverUrl, function(data) {
+      $.post(self.serverUrl, {
+        source: source
+      }).done(function(data) {
+        console.log(data);
+      }).fail(function(data) {
         console.log(data);
       });
-      */
     }
   };
 

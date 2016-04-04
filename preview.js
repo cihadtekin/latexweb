@@ -1,4 +1,5 @@
 var app = require('express')();
+var bodyParser = require('body-parser');
 var _ = require('lodash');
 var fs = require('fs');
 var child_process = require('child_process');
@@ -17,6 +18,10 @@ fs.readdir(tmpDir, function(err, files) {
   }
 });
 
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+
 function Preview(source, opts) {
   if ( ! (this instanceof Preview) ) {
     return new Preview(source, opts);
@@ -27,13 +32,13 @@ function Preview(source, opts) {
    * @type {Object}
    */
   self.opts = _.defaults(opts, {
-    standby: 1000,
-    interval: 1000,
+    standby: 10000,
+    interval: 100,
     lastOutput: Date.now(),
     fileName: Date.now(),  // Temporary file's name
     fileExt: '.tex',
     latexCommand: 'cd {{dir}} && pdflatex {{file}}',
-    convertCommand: 'cd {{dir}} && convert -density 600x600 {{fileName}}.pdf -quality 90 -resize 1080x800 {{fileName}}.png'
+    convertCommand: 'cd {{dir}} && convert {{fileName}}.pdf {{fileName}}.png'
   });
   /**
    * Source to compile
@@ -65,10 +70,9 @@ function Preview(source, opts) {
     if ( ! self.completed ) {
       if (Date.now() - self.opts.lastOutput > self.opts.standby) {
         self.latexProcess && self.latexProcess.kill();
-        console.log('Timer error');
+        self.convertProcess && self.convertProcess.kill();
         return self.complete(PreviewError('Process couldn\'t complete'));
       }
-
       setTimeout(timerFunc, self.opts.interval);
     }
   };
@@ -90,13 +94,14 @@ function Preview(source, opts) {
         .replace('{{dir}}', tmpDir)
         .replace('{{file}}', self.opts.fileName + self.opts.fileExt),
       function(error, stdout, stderr) {
-        if (error !== null) {
-          return self.complete(PreviewError("Latex has encountered an error"));
-        }
         // If there was an error,
         // response should have been sent already
-        if (self.complete) {
+        if (self.completed) {
           return;
+        }
+
+        if (error !== null) {
+          return self.complete(PreviewError("Latex has encountered an error"));
         }
 
         self.opts.lastOutput = Date.now();
@@ -107,6 +112,9 @@ function Preview(source, opts) {
             .replace('{{dir}}', tmpDir)
             .replace(/\{\{fileName\}\}/g, self.opts.fileName),
           function(error, stdout, stderr) {
+            if (self.completed) {
+              return;
+            }
             if (error !== null) {
               return self.complete(PreviewError("Error while converting pdf to png"));
             }
@@ -124,11 +132,15 @@ function Preview(source, opts) {
             });
           }
         );
+
+        self.convertProcess.stdout.on('data', function(data) {
+          console.log('qwer');
+          lastOutput = Date.now();
+        });
       }
     );
-    // Listen outputs
+    
     self.latexProcess.stdout.on('data', function(data) {
-      console.log(data);
       lastOutput = Date.now();
     });
   });
@@ -136,7 +148,7 @@ function Preview(source, opts) {
 
 /**
  * Triggers or binds complete callbacks
- * @param  {Mixed}  cbOrRes Callback fnction or response object
+ * @param  {Mixed}  cbOrRes Callback function or response object
  * @return {Object}         this
  */
 Preview.prototype.complete = function(cbOrRes) {
@@ -173,13 +185,27 @@ function PreviewError(message) {
 }
 
 app.post('/', function(req, res) {
+  // Request türü "POST" ve body; "application/x-www-form-urlencoded; charset=UTF-8"
+  // olmak zorunda. Aksi halde cross origin sorgular için önce preflighted request
+  // gerçekleşecek.
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS#Preflighted_requests
   res.header("Access-Control-Allow-Origin", "http://localhost");
   res.header("Access-Control-Allow-Methods", "POST");
-  /*
-  Preview().complete(function(result) {
-    res.json(result);
-  });
-  */
+
+  if (req.body && req.body.source) {
+    Preview(req.body.source).complete(function(result) {
+      if ( ! result.success ) {
+        res.status(500).json(result);
+      } else {
+        res.json(result);
+      }
+    });
+  } else {
+    return res.status(500).json({
+      "success": false,
+      "message": "Source couldn't receive"
+    });
+  }
 });
 
 app.listen(3002, function() {

@@ -10,16 +10,14 @@
 <body>
 
 <div id="editor">
-	<div id="ace-editor"></div>
+	<div id="ace-editor"><?php echo file_get_contents('samples/1.tex') ?></div>
 </div>
 
-<div id="preview">
-	
-</div>
+<div id="preview"></div>
 
 <script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
 <script type="text/javascript" src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="node_modules/ace-editor-builds/src-min-noconflict/ace.js"></script>
-<script type="text/javascript" src="assets/scripts.js"></script>
+<script type="text/javascript" src="client.js"></script>
 </body>
 </html>
