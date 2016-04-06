@@ -1,4 +1,37 @@
 (function() {
+  function LatexParser(source) {
+    if ( ! (this instanceof LatexParser) ) {
+      return new LatexParser();
+    }
+    /**
+     * Source string
+     * @type {String}
+     */
+    this.source = source;
+    this.footer = null;
+  }
+
+
+  /**
+   * Header; all content before the "\begin{document}" tag.
+   * @type {String}
+   */
+  LatexParser.prototype.getHeader = function(returnRowNumbers) {
+    
+  }
+
+
+    /**
+     * Footer; "\end{document}"
+     * @type {String}
+     */
+  LatexParser.prototype.getFooter = function() {
+
+  }
+
+
+
+
   var app = {
     // Settings
     timeoutId: null,
@@ -10,7 +43,9 @@
     editor: null,
     // Cached data
     cache: {
-      // "fromrow-torow": "cache content"
+      header: null,
+      body: {}, // "fromrow-torow": "cache content"
+      footer: null,
     },
     /**
      * Initialize application
@@ -50,6 +85,14 @@
         }, self.pollInterval);
       }
 
+
+
+
+
+
+
+
+      /*
       $.post(self.serverUrl, {
         source: source
       }).done(function(data) {
@@ -57,7 +100,14 @@
       }).fail(function(data) {
         console.log(data);
       });
-    }
+      */
+    },
+
+
+    parse: function() {
+      
+    },
+
   };
 
   app.init();

@@ -134,7 +134,6 @@ function Preview(source, opts) {
         );
 
         self.convertProcess.stdout.on('data', function(data) {
-          console.log('qwer');
           lastOutput = Date.now();
         });
       }
