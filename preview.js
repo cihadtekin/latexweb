@@ -184,10 +184,6 @@ function PreviewError(message) {
 }
 
 app.post('/', function(req, res) {
-  // Request türü "POST" ve body; "application/x-www-form-urlencoded; charset=UTF-8"
-  // olmak zorunda. Aksi halde cross origin sorgular için önce preflighted request
-  // gerçekleşecek.
-  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS#Preflighted_requests
   res.header("Access-Control-Allow-Origin", "http://localhost");
   res.header("Access-Control-Allow-Methods", "POST");
 

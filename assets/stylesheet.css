@@ -9,13 +9,21 @@
 	left: 50%;
 	width: 50%;
 	height: 100%;
+	overflow: auto;
 }
-
-
-
 #ace-editor {
 	height: 100%;
 }
-
-
-
+#settings {
+	position: absolute;
+	z-index: 99;
+	right: 30px;
+	top: 10px;
+	background: #eee;
+	padding: 10px;
+	font-size: 10px;
+}
+#settings h3 {
+	font-size: 12px;
+	margin: 0 0 10px;
+}

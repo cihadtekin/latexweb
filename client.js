@@ -11,42 +11,44 @@
     this.footer = null;
   }
 
-
   /**
    * Header; all content before the "\begin{document}" tag.
    * @type {String}
    */
-  LatexParser.prototype.getHeader = function(returnRowNumbers) {
+  LatexParser.prototype.getHeader = function() {
     
   }
 
-
-    /**
-     * Footer; "\end{document}"
-     * @type {String}
-     */
+  /**
+   * Footer; "\end{document}"
+   * @type {String}
+   */
   LatexParser.prototype.getFooter = function() {
 
   }
 
-
-
-
   var app = {
     // Settings
     timeoutId: null,
-    pollInterval: 1000, // 1 sec
+    pollingInterval: 300, // ms
+    pollingDuration: 2000,
     ready: false,
     serverUrl: "http://localhost:3002",
 
     // Ace editor instance
     editor: null,
+    // Result container
+    result: null,
     // Cached data
     cache: {
       header: null,
-      body: {}, // "fromrow-torow": "cache content"
+      body: {}, // "fromrow-torow": "cached content"
       footer: null,
     },
+
+    // Private props
+    startedTime: false,
+
     /**
      * Initialize application
      * @return {Void}
@@ -63,9 +65,14 @@
       self.editor.session.setMode("ace/mode/tex");
       self.editor.on("input", function(a, b) {
         var source = b.session.getValue();
+        self.startedTime = 
         self.preview(source);
       });
       self.ready = true;
+      self.result = $('#preview');
+      self.preview(
+        self.editor.session.getValue(), true
+      );
     },
     /**
      * Send to server and get preview
@@ -82,33 +89,47 @@
       if ( ! force ) {
         return self.timeoutId = setTimeout(function() {
           self.preview(source, true);
-        }, self.pollInterval);
+        }, self.pollingInterval);
       }
 
-
-
-
-
-
-
-
-      /*
       $.post(self.serverUrl, {
         source: source
       }).done(function(data) {
-        console.log(data);
+        if (data.success) {
+          self.result.html(
+            $('<img />').attr('src', 'data:image/gif;base64,' +
+              data.result)
+          );
+        }
       }).fail(function(data) {
         console.log(data);
       });
-      */
     },
 
 
     parse: function() {
       
-    },
+    }
 
   };
 
   app.init();
+
+
+
+
+
+
+
+  /**
+   * SETTINGS
+   */
+  $(function() {
+
+    $('#settings input').keyup(function() {
+      app[$(this).attr('name')] = $(this).val() * 1;
+    });
+
+  });
+  
 })();

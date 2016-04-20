@@ -13,6 +13,12 @@
 	<div id="ace-editor"><?php echo file_get_contents('samples/1.tex') ?></div>
 </div>
 
+<div id="settings">
+	<h3>Settings</h3>
+	<label>Polling time</label>
+	<input type="text" name="pollingInterval" value="300" />
+</div>
+
 <div id="preview"></div>
 
 <script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
