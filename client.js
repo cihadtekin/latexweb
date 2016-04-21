@@ -1,53 +1,30 @@
+/**
+ * Latexweb frontend script
+ * Requires jQuery and Ace editor
+ * https://github.com/cihadtekin/latexweb
+ * 
+ * Copyright 2016 Cihad Tekin <cihadtekin@gmail.com>
+ * Licensed under MIT
+ */
 (function() {
-  function LatexParser(source) {
-    if ( ! (this instanceof LatexParser) ) {
-      return new LatexParser();
-    }
-    /**
-     * Source string
-     * @type {String}
-     */
-    this.source = source;
-    this.footer = null;
-  }
+  // Expose as:
+  var namespace = 'latexweb';
 
-  /**
-   * Header; all content before the "\begin{document}" tag.
-   * @type {String}
-   */
-  LatexParser.prototype.getHeader = function() {
-    
-  }
-
-  /**
-   * Footer; "\end{document}"
-   * @type {String}
-   */
-  LatexParser.prototype.getFooter = function() {
-
-  }
-
-  var app = {
+  // Main object
+  var app = window[namespace] = {
     // Settings
     timeoutId: null,
     pollingInterval: 300, // ms
     pollingDuration: 2000,
     ready: false,
-    serverUrl: "http://localhost:3002",
+    serverUrl: "http://localhost:3000/preview",
 
     // Ace editor instance
     editor: null,
-    // Result container
+    // Preview container
     result: null,
-    // Cached data
-    cache: {
-      header: null,
-      body: {}, // "fromrow-torow": "cached content"
-      footer: null,
-    },
 
-    // Private props
-    startedTime: false,
+    input: null,
 
     /**
      * Initialize application
@@ -60,19 +37,44 @@
           app.init(true);
         });
       }
+
+      // Preview section
+      self.result = $('#preview');
+
+      // Preview source input for download
+      self.input = $('#source-input');
+
+      // Editor setup
       self.editor = ace.edit("ace-editor");
       self.editor.setTheme("ace/theme/twilight");
       self.editor.session.setMode("ace/mode/tex");
+
+      // On input event for ace editor
       self.editor.on("input", function(a, b) {
         var source = b.session.getValue();
-        self.startedTime = 
+        localStorage.setItem(namespace + '-document', source);
         self.preview(source);
+        self.input.val(source);
       });
+      
       self.ready = true;
-      self.result = $('#preview');
-      self.preview(
-        self.editor.session.getValue(), true
-      );
+
+      // Initial settings from localStore
+      if (localStorage.getItem(namespace + '-settings')) {
+        var settings = localStorage.getItem(namespace + '-settings');
+        for (var key in settings) {
+          self[key] = settings[key];
+        }
+      }
+
+      // Initial data from localStore
+      if (localStorage.getItem(namespace + '-document')) {
+        self.editor.session.setValue(localStorage.getItem(namespace + '-document'))
+      }
+
+      // Initial compiling
+      self.preview(self.editor.session.getValue(), true);
+      self.input.val(self.editor.session.getValue());
     },
     /**
      * Send to server and get preview
@@ -96,38 +98,45 @@
         source: source
       }).done(function(data) {
         if (data.success) {
-          self.result.html(
-            $('<img />').attr('src', 'data:image/gif;base64,' +
-              data.result)
-          );
+          self.result.html('');
+          for (var i = 0; i < data.result.length; i++) {
+            self.result.append(
+              $('<img />').attr('src', 'data:image/gif;base64,' + data.result[i] )
+            );
+          }
         }
       }).fail(function(data) {
         console.log(data);
       });
-    },
-
-
-    parse: function() {
-      
     }
-
   };
 
   app.init();
-
-
-
-
-
-
 
   /**
    * SETTINGS
    */
   $(function() {
 
+    if (localStorage.getItem(namespace + '-settings')) {
+      var settings = localStorage.getItem(namespace + '-settings') || '{}';
+      try {settings = JSON.parse(settings)}
+      catch(e){}
+      $('#settings input').each(function() {
+        if (settings[ $(this).attr('name') ]) {
+          $(this).val(settings[ $(this).attr('name') ]);
+        }
+      });
+    }
+
     $('#settings input').keyup(function() {
-      app[$(this).attr('name')] = $(this).val() * 1;
+      var name = $(this).attr('name');
+      var settings = localStorage.getItem(namespace + '-settings') || '{}';
+      try {settings = JSON.parse(settings)}
+      catch(e){}
+
+      app[name] = settings[name] = $(this).val() * 1;
+      localStorage.setItem(namespace + '-settings', JSON.stringify(settings));
     });
 
   });

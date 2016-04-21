@@ -1,30 +1,18 @@
-var app = require('express')();
-var bodyParser = require('body-parser');
+/**
+ * Latexweb backend script
+ * https://github.com/cihadtekin/latexweb
+ * 
+ * Copyright 2016 Cihad Tekin <cihadtekin@gmail.com>
+ * Licensed under MIT
+ */
 var _ = require('lodash');
 var fs = require('fs');
 var child_process = require('child_process');
-var tmpDir = __dirname + '/tmp/';
+var settings = require('./../config');
 
-if ( ! fs.existsSync(tmpDir) ){
-  fs.mkdirSync(tmpDir);
-}
-
-// Clear tmpDir
-fs.readdir(tmpDir, function(err, files) {
-  if ( ! err ) {
-    for (var i = 0; i < files.length; i++) {
-      fs.unlink(tmpDir + files[i]);
-    }
-  }
-});
-
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
-
-function Preview(source, opts) {
-  if ( ! (this instanceof Preview) ) {
-    return new Preview(source, opts);
+function ResultPDF(source, opts) {
+  if ( ! (this instanceof ResultPDF) ) {
+    return new ResultPDF(source, opts);
   }
   var self = this;
   /**
@@ -71,7 +59,7 @@ function Preview(source, opts) {
       if (Date.now() - self.opts.lastOutput > self.opts.standby) {
         self.latexProcess && self.latexProcess.kill();
         self.convertProcess && self.convertProcess.kill();
-        return self.complete(PreviewError('Process couldn\'t complete'));
+        return self.complete(ResultPDFError('Process couldn\'t complete'));
       }
       setTimeout(timerFunc, self.opts.interval);
     }
@@ -80,10 +68,10 @@ function Preview(source, opts) {
   timerFunc();
 
   // Write input to a temporary file
-  fs.writeFile(tmpDir + self.opts.fileName + self.opts.fileExt, source, function(error) {
+  fs.writeFile(settings.tmpDir + self.opts.fileName + self.opts.fileExt, source, function(error) {
     // Finish on error
     if (error) {
-      return self.complete(PreviewError('Source couldn\'t write to a temporary file'));
+      return self.complete(ResultPDFError('Source couldn\'t write to a temporary file'));
     }
     // File created, process continues
     self.opts.lastOutput = Date.now();
@@ -91,7 +79,7 @@ function Preview(source, opts) {
     // Compile the temporary tex file
     self.latexProcess = child_process.exec(
       self.opts.latexCommand
-        .replace('{{dir}}', tmpDir)
+        .replace('{{dir}}', settings.tmpDir)
         .replace('{{file}}', self.opts.fileName + self.opts.fileExt),
       function(error, stdout, stderr) {
         // If there was an error,
@@ -101,34 +89,62 @@ function Preview(source, opts) {
         }
 
         if (error !== null) {
-          return self.complete(PreviewError("Latex has encountered an error"));
+          return self.complete(ResultPDFError("Latex has encountered an error"));
         }
 
         self.opts.lastOutput = Date.now();
 
+        var file = fs.readFile(settings.tmpDir + self.opts.fileName + '.png', 'binary');
+        var stat = fileSystem.statSync(filePath);
+
+        res.setHeader('Content-Length', stat.size);
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Disposition', 'attachment; filename=your_file_name');
+        res.write(file, 'binary');
+        res.end();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // Convert pdf file to png
         self.convertProcess = child_process.exec(
           self.opts.convertCommand
-            .replace('{{dir}}', tmpDir)
+            .replace('{{dir}}', settings.tmpDir)
             .replace(/\{\{fileName\}\}/g, self.opts.fileName),
           function(error, stdout, stderr) {
             if (self.completed) {
               return;
             }
             if (error !== null) {
-              return self.complete(PreviewError("Error while converting pdf to png"));
+              return self.complete(ResultPDFError("Error while converting pdf to png"));
             }
             self.opts.lastOutput = Date.now();
-            // Create base64 data of the created image
-            fs.readFile(tmpDir + self.opts.fileName + '.png', function(error, data) {
-              if (error !== null) {
-                return self.complete(PreviewError("Error while reading created image file"));
+
+            var allFiles = fs.readdirSync(settings.tmpDir);
+            var resultData = [];
+            allFiles.map(function(fileName) {
+              if (RegExp(self.opts.fileName + '(-\\d+)?\\.png$').test(fileName)) {
+                // Create base64 data of the created image
+                resultData.push(Buffer(fs.readFileSync(settings.tmpDir + fileName)).toString('base64'));
               }
-              return self.complete({
-                success: true,
-                message: "Data URI created successfully",
-                result: new Buffer(data).toString('base64')
-              });
+            });
+
+            return self.complete({
+              success: true,
+              message: "Data URI created successfully",
+              result: resultData
             });
           }
         );
@@ -150,7 +166,7 @@ function Preview(source, opts) {
  * @param  {Mixed}  cbOrRes Callback function or response object
  * @return {Object}         this
  */
-Preview.prototype.complete = function(cbOrRes) {
+ResultPDF.prototype.complete = function(cbOrRes) {
   var self = this;
   if (typeof cbOrRes === 'function') {
     this.completeCallbacks.push(cbOrRes);
@@ -164,12 +180,12 @@ Preview.prototype.complete = function(cbOrRes) {
 }
 
 /**
- * Preview exception
+ * ResultPDF exception
  * @param {String} message
  */
-function PreviewError(message) {
-  if ( ! (this instanceof PreviewError) ) {
-    return new PreviewError(message);
+function ResultPDFError(message) {
+  if ( ! (this instanceof ResultPDFError) ) {
+    return new ResultPDFError(message);
   }
   /**
    * Message
@@ -183,30 +199,4 @@ function PreviewError(message) {
   this.success = false;
 }
 
-app.post('/', function(req, res) {
-  res.header("Access-Control-Allow-Origin", "http://localhost");
-  res.header("Access-Control-Allow-Methods", "POST");
-
-  if (req.body && req.body.source) {
-    Preview(req.body.source).complete(function(result) {
-      if ( ! result.success ) {
-        res.status(500).json(result);
-      } else {
-        res.json(result);
-      }
-    });
-  } else {
-    return res.status(500).json({
-      "success": false,
-      "message": "Source couldn't receive"
-    });
-  }
-});
-
-app.listen(3002, function() {
-  console.log('Listening on 3002');
-});
-
-process.on('uncaughtException', function(err) {
-  console.log('uncaughtException', err.stack);
-});
+module.exports = ResultPDF;

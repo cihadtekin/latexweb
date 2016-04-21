@@ -14,9 +14,16 @@
 </div>
 
 <div id="settings">
-	<h3>Settings</h3>
-	<label>Polling time</label>
-	<input type="text" name="pollingInterval" value="300" />
+	<h3>Controls</h3>
+	<div>
+		<label>Key press interval (ms)</label>
+		<input type="text" name="pollingInterval" value="300" />
+	</div>
+
+	<form>
+		<input name="source" type="hidden" id="source-input">
+		<button type="submit">Download as PDF</button>
+	</form>
 </div>
 
 <div id="preview"></div>
