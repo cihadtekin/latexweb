@@ -37,9 +37,9 @@ app.post('/preview', function(req, res) {
   if (req.body && req.body.source) {
     Preview(req.body.source).complete(function(result) {
       if ( ! result.success ) {
-        res.status(500).json(result);
+        return res.status(500).json(result);
       } else {
-        res.json(result);
+        return res.json(result);
       }
     });
   } else {
@@ -50,16 +50,22 @@ app.post('/preview', function(req, res) {
   }
 });
 
-app.post('/result-pdf', function() {
+app.post('/result-pdf', function(req, res) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "POST");
 
   if (req.body && req.body.source) {
     ResultPDF(req.body.source).complete(function(result) {
+      var self = this;
       if ( ! result.success ) {
-        res.status(500).json(result);
+        return res.status(500).json(result);
       } else {
-        res.json(result);
+        res.sendFile(result.file);
+        // Clear files after file sent
+        setTimeout(function() {
+          self.clear()
+        }, 1000);
+        return;
       }
     });
   } else {

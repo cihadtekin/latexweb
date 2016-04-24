@@ -1,6 +1,5 @@
 /**
  * Latexweb frontend script
- * Requires jQuery and Ace editor
  * https://github.com/cihadtekin/latexweb
  * 
  * Copyright 2016 Cihad Tekin <cihadtekin@gmail.com>
@@ -17,7 +16,7 @@
     pollingInterval: 300, // ms
     pollingDuration: 2000,
     ready: false,
-    serverUrl: "http://localhost:3000/preview",
+    serverUrl: params.previewUrl,
 
     // Ace editor instance
     editor: null,
@@ -137,6 +136,13 @@
 
       app[name] = settings[name] = $(this).val() * 1;
       localStorage.setItem(namespace + '-settings', JSON.stringify(settings));
+    });
+
+    $('#clear-cache').click(function() {
+      if (confirm("Are you sure?")) {
+        localStorage.clear();
+        window.location.reload();
+      }
     });
 
   });

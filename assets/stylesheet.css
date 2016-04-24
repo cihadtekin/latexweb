@@ -1,3 +1,8 @@
+body {
+	margin: 0;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+}
 #editor  {
 	position: fixed;
 	left: 0;
@@ -10,6 +15,13 @@
 	width: 50%;
 	height: 100%;
 	overflow: auto;
+}
+#preview img {
+	max-width: 100%;
+	border-top: 1px solid #eee;
+}
+#preview img:first-child {
+	border-top: none;
 }
 #ace-editor {
 	height: 100%;
@@ -26,4 +38,9 @@
 #settings h3 {
 	font-size: 12px;
 	margin: 0 0 4px;
+}
+#settings button {
+	font-size: 12px;
+	margin-top: 5px;
+	font-size : 10px;
 }

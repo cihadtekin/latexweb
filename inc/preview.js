@@ -1,10 +1,3 @@
-/**
- * Latexweb backend script
- * https://github.com/cihadtekin/latexweb
- * 
- * Copyright 2016 Cihad Tekin <cihadtekin@gmail.com>
- * Licensed under MIT
- */
 var _ = require('lodash');
 var fs = require('fs');
 var child_process = require('child_process');
@@ -117,6 +110,9 @@ function Preview(source, opts) {
               }
             });
 
+            // Remove all of the created files
+            self.clear();
+
             return self.complete({
               success: true,
               message: "Data URI created successfully",
@@ -153,6 +149,25 @@ Preview.prototype.complete = function(cbOrRes) {
     }
   }
   return self;
+}
+
+/**
+ * Removes all created files
+ * @return {Void}
+ */
+Preview.prototype.clear = function() {
+  var self = this;
+  var regex = RegExp(self.opts.fileName + '(-\\d+)?\\.(png|aux|log|pdf|tex)');
+  // Clear tmpDir
+  fs.readdir(settings.tmpDir, function(err, files) {
+    if ( ! err ) {
+      for (var i = 0; i < files.length; i++) {
+        if (regex.test(files[i])) {
+          fs.unlink(settings.tmpDir + files[i]);
+        }
+      }
+    }
+  });
 }
 
 /**

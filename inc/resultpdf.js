@@ -1,12 +1,6 @@
-/**
- * Latexweb backend script
- * https://github.com/cihadtekin/latexweb
- * 
- * Copyright 2016 Cihad Tekin <cihadtekin@gmail.com>
- * Licensed under MIT
- */
 var _ = require('lodash');
 var fs = require('fs');
+var path = require('path');
 var child_process = require('child_process');
 var settings = require('./../config');
 
@@ -25,8 +19,7 @@ function ResultPDF(source, opts) {
     lastOutput: Date.now(),
     fileName: Date.now(),  // Temporary file's name
     fileExt: '.tex',
-    latexCommand: 'cd {{dir}} && pdflatex {{file}}',
-    convertCommand: 'cd {{dir}} && convert {{fileName}}.pdf {{fileName}}.png'
+    latexCommand: 'cd {{dir}} && pdflatex {{file}}'
   });
   /**
    * Source to compile
@@ -94,63 +87,21 @@ function ResultPDF(source, opts) {
 
         self.opts.lastOutput = Date.now();
 
-        var file = fs.readFile(settings.tmpDir + self.opts.fileName + '.png', 'binary');
-        var stat = fileSystem.statSync(filePath);
+        var fileName = settings.tmpDir + self.opts.fileName + '.pdf';
 
-        res.setHeader('Content-Length', stat.size);
-        res.setHeader('Content-Type', 'audio/mpeg');
-        res.setHeader('Content-Disposition', 'attachment; filename=your_file_name');
-        res.write(file, 'binary');
-        res.end();
+        // Check if there was an error on file creation
+        if ( ! fs.existsSync(fileName) ) {
+          return self.complete({
+            success: true,
+            message: "File couldn't create"
+          });
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // Convert pdf file to png
-        self.convertProcess = child_process.exec(
-          self.opts.convertCommand
-            .replace('{{dir}}', settings.tmpDir)
-            .replace(/\{\{fileName\}\}/g, self.opts.fileName),
-          function(error, stdout, stderr) {
-            if (self.completed) {
-              return;
-            }
-            if (error !== null) {
-              return self.complete(ResultPDFError("Error while converting pdf to png"));
-            }
-            self.opts.lastOutput = Date.now();
-
-            var allFiles = fs.readdirSync(settings.tmpDir);
-            var resultData = [];
-            allFiles.map(function(fileName) {
-              if (RegExp(self.opts.fileName + '(-\\d+)?\\.png$').test(fileName)) {
-                // Create base64 data of the created image
-                resultData.push(Buffer(fs.readFileSync(settings.tmpDir + fileName)).toString('base64'));
-              }
-            });
-
-            return self.complete({
-              success: true,
-              message: "Data URI created successfully",
-              result: resultData
-            });
-          }
-        );
-
-        self.convertProcess.stdout.on('data', function(data) {
-          lastOutput = Date.now();
+        return self.complete({
+          success: true,
+          message: "File created",
+          // Requires absolute path
+          file: path.resolve(fileName)
         });
       }
     );
@@ -177,6 +128,25 @@ ResultPDF.prototype.complete = function(cbOrRes) {
     }
   }
   return self;
+}
+
+/**
+ * Removes all created files
+ * @return {Void}
+ */
+ResultPDF.prototype.clear = function() {
+  var self = this;
+  var regex = RegExp(self.opts.fileName + '(-\d+)?\.(png|aux|log|pdf|tex)');
+  // Clear tmpDir
+  fs.readdir(settings.tmpDir, function(err, files) {
+    if ( ! err ) {
+      for (var i = 0; i < files.length; i++) {
+        if (regex.test(files[i])) {
+          fs.unlink(settings.tmpDir + files[i]);
+        }
+      }
+    }
+  });
 }
 
 /**

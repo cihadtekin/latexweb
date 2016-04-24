@@ -1,0 +1,9 @@
+[Unit]
+Description=Latex Web (Node.js)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/nodejs /home/stardog/www/latexweb/server.js
+
+[Install]
+WantedBy=multi-user.target
