@@ -1,3 +1,4 @@
 # latexweb
 
-An experimental latex editor
+### Project page:
+http://takyonik.com/latexweb/
